@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesquisa de Campo</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 15px;
+  background: #f5f5f5;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+h2 {
+  text-align: center;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #007bff;
+  color: white;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.hidden {
+  display: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Pesquisa de Campo</h2>
+
+  <button onclick="iniciarGravacao()">🎤 Iniciar Gravação</button>
+  <button onclick="pararGravacao()">⏹️ Parar Gravação</button>
+
+  <p id="statusGravacao"></p>
+
+  <div id="formulario" class="hidden">
+    <label>Nome do entrevistado</label>
+    <input type="text" id="nome">
+
+    <label>Idade</label>
+    <input type="number" id="idade">
+
+    <label>Sexo</label>
+    <select id="sexo">
+      <option value="">Selecione</option>
+      <option>Masculino</option>
+      <option>Feminino</option>
+    </select>
+
+    <label>Em quem votaria hoje?</label>
+    <select id="voto">
+      <option value="">Selecione</option>
+      <option>Candidato A</option>
+      <option>Candidato B</option>
+      <option>Nulo/Branco</option>
+    </select>
+
+    <button onclick="enviarDados()">📤 Enviar Pesquisa</button>
+  </div>
+</div>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+let audioBlob;
+
+async function iniciarGravacao() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+      audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      document.getElementById("statusGravacao").innerText = "Gravação finalizada";
+      document.getElementById("formulario").classList.remove("hidden");
+    };
+
+    mediaRecorder.start();
+    document.getElementById("statusGravacao").innerText = "Gravando...";
+
+  } catch (erro) {
+    alert("Erro ao acessar microfone: " + erro);
+  }
+}
+
+function pararGravacao() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  } else {
+    alert("Gravação não iniciada!");
+  }
+}
+
+function obterLocalizacao(callback) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    callback(pos.coords.latitude, pos.coords.longitude);
+  });
+}
+
+function enviarDados() {
+  const nome = document.getElementById("nome").value;
+  const idade = document.getElementById("idade").value;
+  const sexo = document.getElementById("sexo").value;
+  const voto = document.getElementById("voto").value;
+
+  obterLocalizacao((lat, lng) => {
+
+    const formData = new FormData();
+    formData.append("nome", nome);
+    formData.append("idade", idade);
+    formData.append("sexo", sexo);
+    formData.append("voto", voto);
+    formData.append("latitude", lat);
+    formData.append("longitude", lng);
+
+    if (audioBlob) {
+      const reader = new FileReader();
+
+      reader.onloadend = function () {
+        formData.append("audio", reader.result);
+        enviar(formData);
+      };
+
+      reader.readAsDataURL(audioBlob);
+
+    } else {
+      enviar(formData);
+    }
+
+  });
+}
+
+function enviar(formData) {
+  fetch("https://script.google.com/macros/s/AKfycbzmLbYngAImyOZ4GB3foo0QFVb5NW4JpY2QkTBdqPT-UhiOlJVX44ItjTdzFD2nAT44/exec", {
+    method: "POST",
+    mode: "no-cors",
+    body: formData
+  })
+  .then(() => {
+    alert("Pesquisa enviada com sucesso!");
+    location.reload();
+  })
+  .catch((erro) => {
+    alert("Erro ao enviar: " + erro);
+  });
+}
+  obterLocalizacao((lat, lng) => {
+
+    const reader = new FileReader();
+
+    reader.onloadend = function () {
+      const base64data = reader.result;
+
+      const formData = new FormData();
+      formData.append("nome", nome);
+      formData.append("idade", idade);
+      formData.append("sexo", sexo);
+      formData.append("voto", voto);
+      formData.append("latitude", lat);
+      formData.append("longitude", lng);
+      formData.append("audio", base64data);
+
+      fetch("https://script.google.com/macros/s/AKfycbzmLbYngAImyOZ4GB3foo0QFVb5NW4JpY2QkTBdqPT-UhiOlJVX44ItjTdzFD2nAT44/exec", {
+        method: "POST",
+        mode: "no-cors",
+        body: formData
+      })
+      .then(() => {
+        alert("Pesquisa enviada com sucesso!");
+        location.reload();
+      })
+      .catch((erro) => {
+       alert("Erro ao enviar: " + erro);
+     });
+
+     
+</script>
+
+</body>
+</html>
+
+
