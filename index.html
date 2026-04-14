@@ -83,7 +83,6 @@ input, select, textarea {
     <button onclick="enviarDados()">📤 Enviar Pesquisa</button>
   </div>
 </div>
-
 <script>
 let mediaRecorder;
 let audioChunks = [];
@@ -175,39 +174,6 @@ function enviar(formData) {
     alert("Erro ao enviar: " + erro);
   });
 }
-    obterLocalizacao((lat, lng) => {
-
-    const reader = new FileReader();
-
-    reader.onloadend = function () {
-      const base64data = reader.result;
-
-      const formData = new FormData();
-      formData.append("nome", nome);
-      formData.append("idade", idade);
-      formData.append("sexo", sexo);
-      formData.append("voto", voto);
-      formData.append("latitude", lat);
-      formData.append("longitude", lng);
-      formData.append("audio", base64data);
-
-      fetch("https://script.google.com/macros/s/AKfycbzmLbYngAImyOZ4GB3foo0QFVb5NW4JpY2QkTBdqPT-UhiOlJVX44ItjTdzFD2nAT44/exec", {
-        method: "POST",
-        mode: "no-cors",
-        body: formData
-      })
-      .then(() => {
-        alert("Pesquisa enviada com sucesso!");
-        location.reload();
-      })
-      .catch((erro) => {
-       alert("Erro ao enviar: " + erro);
-     });
-
-    
 </script>
-
 </body>
 </html>
-
-
