@@ -62,8 +62,7 @@ function carregarPerguntas() {
 
   script.src = URL + "?id=" + ID_PESQUISA + "&callback=montarFormulario";
 
-  document.body.appendChild(script);
-}
+  document.head.appendChild(script);
 
 function montarFormulario(perguntas) {
   const form = document.getElementById("formulario");
