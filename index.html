@@ -54,13 +54,18 @@ input, select {
 
 const ID_PESQUISA = 1;
 
-// 🔴 COLE AQUI SEU LINK DO APPS SCRIPT
+// 🔴 COLE SEU LINK AQUI
 const URL = "https://script.google.com/macros/s/AKfycbzmLbYngAImyOZ4GB3foo0QFVb5NW4JpY2QkTBdqPT-UhiOlJVX44ItjTdzFD2nAT44/exec";
 
-async function carregarPerguntas() {
-  const resposta = await fetch(URL + "?id=" + ID_PESQUISA);
-  const perguntas = await resposta.json();
+function carregarPerguntas() {
+  const script = document.createElement("script");
 
+  script.src = URL + "?id=" + ID_PESQUISA + "&callback=montarFormulario";
+
+  document.body.appendChild(script);
+}
+
+function montarFormulario(perguntas) {
   const form = document.getElementById("formulario");
   form.innerHTML = "";
 
