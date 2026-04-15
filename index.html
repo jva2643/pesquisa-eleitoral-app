@@ -7,7 +7,7 @@
 
 <style>
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   padding: 15px;
   background: #f5f5f5;
 }
@@ -18,10 +18,6 @@ body {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
-}
-
-h2 {
-  text-align: center;
 }
 
 button {
@@ -35,15 +31,11 @@ button {
   color: white;
 }
 
-input, select, textarea {
+input, select {
   width: 100%;
   padding: 12px;
   margin-top: 8px;
   font-size: 16px;
-}
-
-.hidden {
-  display: none;
 }
 </style>
 </head>
@@ -53,115 +45,70 @@ input, select, textarea {
 <div class="container">
   <h2>Pesquisa de Campo</h2>
 
-  <button onclick="iniciarGravacao()">🎤 Iniciar Gravação</button>
-  <button onclick="pararGravacao()">⏹️ Parar Gravação</button>
+  <div id="formulario"></div>
 
-  <p id="statusGravacao"></p>
-
-  <div id="formulario" class="hidden">
-    <label>Nome do entrevistado</label>
-    <input type="text" id="nome">
-
-    <label>Idade</label>
-    <input type="number" id="idade">
-
-    <label>Sexo</label>
-    <select id="sexo">
-      <option value="">Selecione</option>
-      <option>Masculino</option>
-      <option>Feminino</option>
-    </select>
-
-    <label>Em quem votaria hoje?</label>
-    <select id="voto">
-      <option value="">Selecione</option>
-      <option>Candidato A</option>
-      <option>Candidato B</option>
-      <option>Nulo/Branco</option>
-    </select>
-
-    <button onclick="enviarDados()">📤 Enviar Pesquisa</button>
-  </div>
+  <button onclick="enviarDados()">📤 Enviar Pesquisa</button>
 </div>
+
 <script>
-let mediaRecorder;
-let audioChunks = [];
-let audioBlob;
 
-async function iniciarGravacao() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const ID_PESQUISA = 1;
 
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
+// 🔴 COLE AQUI SEU LINK DO APPS SCRIPT
+const URL = "https://script.google.com/macros/s/AKfycbzmLbYngAImyOZ4GB3foo0QFVb5NW4JpY2QkTBdqPT-UhiOlJVX44ItjTdzFD2nAT44/exec";
 
-    mediaRecorder.ondataavailable = event => {
-      audioChunks.push(event.data);
-    };
+async function carregarPerguntas() {
+  const resposta = await fetch(URL + "?id=" + ID_PESQUISA);
+  const perguntas = await resposta.json();
 
-    mediaRecorder.onstop = () => {
-      audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      document.getElementById("statusGravacao").innerText = "Gravação finalizada";
-      document.getElementById("formulario").classList.remove("hidden");
-    };
+  const form = document.getElementById("formulario");
+  form.innerHTML = "";
 
-    mediaRecorder.start();
-    document.getElementById("statusGravacao").innerText = "Gravando...";
+  perguntas.forEach(p => {
+    const label = document.createElement("label");
+    label.innerText = p.pergunta;
 
-  } catch (erro) {
-    alert("Erro ao acessar microfone: " + erro);
-  }
-}
+    let input;
 
-function pararGravacao() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    mediaRecorder.stop();
-  } else {
-    alert("Gravação não iniciada!");
-  }
-}
+    if (p.tipo === "texto") {
+      input = document.createElement("input");
+      input.type = "text";
+    }
 
-function obterLocalizacao(callback) {
-  navigator.geolocation.getCurrentPosition(pos => {
-    callback(pos.coords.latitude, pos.coords.longitude);
+    if (p.tipo === "numero") {
+      input = document.createElement("input");
+      input.type = "number";
+    }
+
+    if (p.tipo === "select") {
+      input = document.createElement("select");
+
+      const opcoes = p.opcoes.split(",");
+      opcoes.forEach(op => {
+        const option = document.createElement("option");
+        option.text = op;
+        input.add(option);
+      });
+    }
+
+    input.id = p.id + "|" + p.pergunta + "|" + p.grupo;
+
+    form.appendChild(label);
+    form.appendChild(input);
   });
 }
 
 function enviarDados() {
-  const nome = document.getElementById("nome").value;
-  const idade = document.getElementById("idade").value;
-  const sexo = document.getElementById("sexo").value;
-  const voto = document.getElementById("voto").value;
+  const inputs = document.querySelectorAll("#formulario input, #formulario select");
 
-  obterLocalizacao((lat, lng) => {
+  const formData = new FormData();
+  formData.append("id_pesquisa", ID_PESQUISA);
 
-    const formData = new FormData();
-    formData.append("nome", nome);
-    formData.append("idade", idade);
-    formData.append("sexo", sexo);
-    formData.append("voto", voto);
-    formData.append("latitude", lat);
-    formData.append("longitude", lng);
-
-    if (audioBlob) {
-      const reader = new FileReader();
-
-      reader.onloadend = function () {
-        formData.append("audio", reader.result);
-        enviar(formData);
-      };
-
-      reader.readAsDataURL(audioBlob);
-
-    } else {
-      enviar(formData);
-    }
-
+  inputs.forEach(input => {
+    formData.append(input.id, input.value);
   });
-}
 
-function enviar(formData) {
-  fetch("https://script.google.com/macros/s/AKfycbzmLbYngAImyOZ4GB3foo0QFVb5NW4JpY2QkTBdqPT-UhiOlJVX44ItjTdzFD2nAT44/exec", {
+  fetch(URL, {
     method: "POST",
     mode: "no-cors",
     body: formData
@@ -169,11 +116,12 @@ function enviar(formData) {
   .then(() => {
     alert("Pesquisa enviada com sucesso!");
     location.reload();
-  })
-  .catch((erro) => {
-    alert("Erro ao enviar: " + erro);
   });
 }
+
+carregarPerguntas();
+
 </script>
+
 </body>
 </html>
